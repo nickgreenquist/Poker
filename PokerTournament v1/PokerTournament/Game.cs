@@ -829,7 +829,7 @@ namespace PokerTournament
             }
 
             // check for end conditions
-            if(pa1.ActionName == "fold" || pa0.ActionName == "fold")
+            if(pa0.ActionName == "fold" || pa1.ActionName == "fold")
             {
                 return true; // somebody folded
             }
