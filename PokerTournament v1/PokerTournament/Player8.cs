@@ -28,7 +28,16 @@ namespace PokerTournament
                 Console.WriteLine("Select an action:\n1 - bet\n2 - raise\n3 - call\n4 - check\n5 - fold");
 
                 //AI input for this round
-                if(hand.Rank <= 0)
+
+                /*
+                 *  1. First check if the computer player already has a hand of One Pair or better. If so, discard all other card.
+                    2. If the hand evaluates to "High Card", determine if the user has 4 cards of the same suit. If so, discard the card of the different suit.
+                    3. Next determine if the user has 4 cards in sequence. of the same suit. If so, discard the card that is out of sequence.
+                    4. Next if the user has an Ace, discard the other four cards.
+                    5. Otherwise, keep the two highest cards and discard the other 3.
+                 */
+
+                if (hand.Rank <= 0)
                 {
                     actionSelection = "5";
                 }
