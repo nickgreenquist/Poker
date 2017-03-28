@@ -20,6 +20,10 @@ namespace PokerTournament
             // list the hand
             ListTheHand(hand);
 
+            //get rank manually
+            Card highCard = null;
+            int rank = Evaluate.RateAHand(hand, out highCard);
+
             // select an action
             string actionSelection = "";
             PlayerAction pa = null;
@@ -29,26 +33,18 @@ namespace PokerTournament
 
                 //AI input for this round
 
-                /*
-                 *  1. First check if the computer player already has a hand of One Pair or better. If so, discard all other card.
-                    2. If the hand evaluates to "High Card", determine if the user has 4 cards of the same suit. If so, discard the card of the different suit.
-                    3. Next determine if the user has 4 cards in sequence. of the same suit. If so, discard the card that is out of sequence.
-                    4. Next if the user has an Ace, discard the other four cards.
-                    5. Otherwise, keep the two highest cards and discard the other 3.
-                 */
-
-                if (hand.Rank <= 0)
+                //fold if hand is worse than pair
+                if (rank <= 1)
                 {
                     actionSelection = "5";
                 }
-                else if(hand.Rank >= 3)
-                {
-                    actionSelection = "3";
-                }
+
+                //otherwise check 
                 else
                 {
                     actionSelection = "4";
                 }
+
                 // get amount if appropriate
                 int amount = 0;
                 if (actionSelection[0] == '1' || actionSelection[0] == '2')
@@ -119,12 +115,160 @@ namespace PokerTournament
             // list the hand
             ListTheHand(hand);
 
+            //card index to deletes
+            List<int> deleteIndexes = new List<int>();
+
+            //get rank manually
+            Card highCard = null;
+            int rank = Evaluate.RateAHand(hand, out highCard);
+
             // determine how many cards to delete
             int cardsToDelete = 0;
             do
             {
                 Console.Write("How many cards to delete? "); // get the count
-                string deleteStr = Console.ReadLine();
+                //string deleteStr = Console.ReadLine();
+                string deleteStr;
+
+                //use a decision tree to figure out the cards to delete
+                deleteStr = "0";
+                //straight, flush, full house, straight flush, or royal flush
+                if(rank == 5 || rank == 6 || rank == 7 || rank == 9 || rank == 10)
+                {
+                    deleteStr = "0";
+                }
+
+                //4 of a kind
+                if(rank == 8)
+                {
+                    //throw out 1 unless it's a King or Ace
+                    Dictionary<int, int> handMap = new Dictionary<int, int>();
+                    for(int i = 0; i < hand.Length; i++)
+                    {
+                        if(handMap.ContainsKey(hand[i].Value))
+                        {
+                            handMap[hand[i].Value]++;
+                        }
+                        else
+                        {
+                            handMap.Add(hand[i].Value, 1);
+                        }
+                    }
+
+                    int v = handMap.FirstOrDefault(x => x.Value == 1).Key;
+                    if(v < 14) //if less than ace
+                    {
+                        deleteStr = "1";
+                        for (int i = 0; i < hand.Length; i++)
+                        {
+                            if (hand[i].Value == v)
+                            {
+                                deleteIndexes.Add(i);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        deleteStr = "0";
+                    }
+                }
+
+                //3 of a kind
+                if(rank == 4)
+                {
+                    //throw out 2 that are not part of 3 of kind
+                    Dictionary<int, int> handMap = new Dictionary<int, int>();
+                    for (int i = 0; i < hand.Length; i++)
+                    {
+                        if (handMap.ContainsKey(hand[i].Value))
+                        {
+                            handMap[hand[i].Value]++;
+                        }
+                        else
+                        {
+                            handMap.Add(hand[i].Value, 1);
+                        }
+                    }
+
+                    int v = handMap.FirstOrDefault(x => x.Value == 3).Key; //3 kind value
+
+                    for(int i = 0; i < hand.Length; i++)
+                    {
+                        if(hand[i].Value != v)
+                        {
+                            deleteIndexes.Add(i);
+                        }
+                    }
+
+                    deleteStr = "2";
+                }
+
+                //2 pair
+                if(rank == 3)
+                {
+                    //throw out 1 card not in either pair
+                    Dictionary<int, int> handMap = new Dictionary<int, int>();
+                    for (int i = 0; i < hand.Length; i++)
+                    {
+                        if (handMap.ContainsKey(hand[i].Value))
+                        {
+                            handMap[hand[i].Value]++;
+                        }
+                        else
+                        {
+                            handMap.Add(hand[i].Value, 1);
+                        }
+                    }
+
+                    int v = handMap.FirstOrDefault(x => x.Value == 1).Key;
+                    if (v < 14) //if less than ace
+                    {
+                        deleteStr = "1";
+                        for (int i = 0; i < hand.Length; i++)
+                        {
+                            if (hand[i].Value == v)
+                            {
+                                deleteIndexes.Add(i);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        deleteStr = "0";
+                    }
+                }
+
+                //1 pair
+                if(rank == 2)
+                {
+                    //throw out 3 cards not in the pair
+                    Dictionary<int, int> handMap = new Dictionary<int, int>();
+                    for (int i = 0; i < hand.Length; i++)
+                    {
+                        if (handMap.ContainsKey(hand[i].Value))
+                        {
+                            handMap[hand[i].Value]++;
+                        }
+                        else
+                        {
+                            handMap.Add(hand[i].Value, 1);
+                        }
+                    }
+
+                    int v = handMap.FirstOrDefault(x => x.Value == 3).Key;
+
+                    for(int i = 0; i < hand.Length; i++)
+                    {
+                        if(hand[i].Value != v)
+                        {
+                            deleteIndexes.Add(i);
+                        }
+                    }
+
+                    deleteStr = "3";
+                }
+                
+
                 int.TryParse(deleteStr, out cardsToDelete);
             } while (cardsToDelete < 0 || cardsToDelete > 5);
 
@@ -145,8 +289,10 @@ namespace PokerTournament
                     {
 
                         Console.Write("Which card to delete? (1 - 5): ");
-                        string delStr = Console.ReadLine();
-                        int.TryParse(delStr, out delete);
+                        //string delStr = Console.ReadLine();
+                        //int.TryParse(delStr, out delete);
+
+                        delete = deleteIndexes[i] + 1;
 
                         // see if the entry is valid
                         if (delete < 1 || delete > 5)
