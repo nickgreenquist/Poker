@@ -146,7 +146,7 @@ namespace PokerTournament
                     } while (delete == 0);
                 }
                 // set the PlayerAction object
-                pa = new PlayerAction(Name, "draw", "draw", cardsToDelete);
+                pa = new PlayerAction(Name, "Draw", "draw", cardsToDelete);
             }
             else if(cardsToDelete == 5)
             {
@@ -155,11 +155,11 @@ namespace PokerTournament
                 {
                     hand[i] = null;
                 }
-                pa = new PlayerAction(Name, "draw", "draw", 5);
+                pa = new PlayerAction(Name, "Draw", "draw", 5);
             }
             else // no cards deleted
             {
-                pa = new PlayerAction(Name, "draw", "stand pat", 0);
+                pa = new PlayerAction(Name, "Draw", "stand pat", 0);
             }
 
             // return the action

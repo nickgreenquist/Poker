@@ -189,6 +189,7 @@ namespace PokerTournament
                 }
                 actions.Add(pa0);
                 ResultWriter(pa0.ToString());
+                ResultWriter(" ");
                 if (pa0.ActionName != "fold") // first player did not fold
                 {
                     PlayerAction pa1 = playerOrder[1].BettingRound1(actions, playerOrder[1].Hand);
@@ -200,6 +201,7 @@ namespace PokerTournament
                     }
                     actions.Add(pa1);
                     ResultWriter(pa1.ToString());
+                    ResultWriter(" ");
                 }
                 done = EvaluateActions(actions,"Bet1");
             } while (done == false);
@@ -213,32 +215,70 @@ namespace PokerTournament
                     switch(actions[i].ActionName)
                     {
                         case "bet":
-                            lastBet = actions[i].Amount;
-                            pot += lastBet;
+                            lastBet = actions[i].Amount; 
+                            pot += lastBet; // adjust the pot
+                            // deduct from player
+                            if(actions[i].Name == playerOrder[0].Name) // player0 bet?
+                            {
+                                playerOrder[0].ChangeMoney(-lastBet);
+                            }
+                            else // must be player1
+                            {
+                                playerOrder[1].ChangeMoney(-lastBet);
+                            }
                             break;
                         case "raise":
+                            int total = lastBet; // amt from previous player
                             pot += lastBet; // player raising must match last bet
                             lastBet = actions[i].Amount;
+                            total += lastBet; // amt being raised
                             pot += lastBet; // plus the amount raised
+                            // deduct from player
+                            if (actions[i].Name == playerOrder[0].Name) // player0 bet?
+                            {
+                                playerOrder[0].ChangeMoney(-total);
+                            }
+                            else // must be player1
+                            {
+                                playerOrder[1].ChangeMoney(-total);
+                            }
                             break;
                         case "call":
+                            // skip if this is a call after a bet/raise by the same player
+                            if (i - 2 >= 0)
+                            {
+                                if (actions[i - 2].ActionName == "bet" ||
+                                   actions[i - 2].ActionName == "raise")
+                                {
+                                    break;
+                                }
+                            }
                             pot += lastBet; // match the last bet
+                            // deduct from player
+                            if (actions[i].Name == playerOrder[0].Name) // player0 bet?
+                            {
+                                playerOrder[0].ChangeMoney(-lastBet);
+                            }
+                            else // must be player1
+                            {
+                                playerOrder[1].ChangeMoney(-lastBet);
+                            }
                             break;
                     }
                 }
             }
 
             ResultWriter("After Bet1, pot is " + pot);
+            ResultWriter(" ");
 
             // see if someone folded
-            if(actions[actions.Count - 1].ActionName == "fold")
+            if (actions[actions.Count - 1].ActionName == "fold")
             {
                 // if the player in playerOrder[1] folded, other
                 // player gets the pot
                 playerOrder[0].ChangeMoney(pot);
-                pot = 0; // clear the pot
                 string result = actions[actions.Count - 1].Name + " folded. Other player gets the pot of " + pot;
-                ResultWriter(result);
+                pot = 0; // clear the pot
                 return result; // skip rest of loop
             }
 
@@ -247,9 +287,8 @@ namespace PokerTournament
                 // if the player in playerOrder[0] folded, other
                 // player gets the pot
                 playerOrder[1].ChangeMoney(pot);
-                pot = 0; // clear the pot
                 string result = actions[actions.Count - 2].Name + " folded. Other player gets the pot of " + pot;
-                ResultWriter(result);
+                pot = 0; // clear the pot
                 return result; // skip rest of loop
             }
 
@@ -266,6 +305,7 @@ namespace PokerTournament
                 ResultWriter("Name: " + playerOrder[i].Name);
                 string handList = Evaluate.ListHand(playerOrder[i].Hand);
                 ResultWriter(handList);
+                ResultWriter(" ");
             }
 
             // round 2 of betting- loop until both players check,
@@ -275,14 +315,95 @@ namespace PokerTournament
             do
             {
                 PlayerAction pa0 = playerOrder[0].BettingRound2(actions, playerOrder[0].Hand);
+                bool valid = CheckAction("Bet2", actions, pa0);
+                if (valid == false)
+                {
+                    ResultWriter(playerOrder[0].Name + " played a bad action of " + pa0.ActionName + " and forfeits the hand");
+                    pa0 = new PlayerAction(pa0.Name, pa0.ActionPhase, "fold", 0);
+                }
                 actions.Add(pa0);
                 ResultWriter(pa0.ToString());
-                PlayerAction pa1 = playerOrder[1].BettingRound2(actions, playerOrder[1].Hand);
-                actions.Add(pa1);
-                ResultWriter(pa1.ToString());
+                ResultWriter(" ");
+                if (pa0.ActionName != "fold") // first player did not fold
+                {
+                    PlayerAction pa1 = playerOrder[1].BettingRound2(actions, playerOrder[1].Hand);
+                    valid = CheckAction("Bet2", actions, pa1);
+                    if (valid == false)
+                    {
+                        ResultWriter(playerOrder[1].Name + " played a bad action of " + pa1.ActionName + " and forfeits the hand");
+                        pa1 = new PlayerAction(pa1.Name, pa1.ActionPhase, "fold", 0);
+                    }
+                    actions.Add(pa1);
+                    ResultWriter(pa1.ToString());
+                    ResultWriter(" ");
+                }
                 done = EvaluateActions(actions, "Bet2");
             } while (done == false);
 
+            // update the pot based on the bets
+            lastBet = 0;
+            for (int i = 0; i < actions.Count; i++)
+            {
+                if (actions[i].ActionPhase == "Bet2")
+                {
+                    switch (actions[i].ActionName)
+                    {
+                        case "bet":
+                            lastBet = actions[i].Amount;
+                            pot += lastBet; // adjust the pot
+                            // deduct from player
+                            if (actions[i].Name == playerOrder[0].Name) // player0 bet?
+                            {
+                                playerOrder[0].ChangeMoney(-lastBet);
+                            }
+                            else // must be player1
+                            {
+                                playerOrder[1].ChangeMoney(-lastBet);
+                            }
+                            break;
+                        case "raise":
+                            int total = lastBet; // amt from previous player
+                            pot += lastBet; // player raising must match last bet
+                            lastBet = actions[i].Amount;
+                            total += lastBet; // amt being raised
+                            pot += lastBet; // plus the amount raised
+                            // deduct from player
+                            if (actions[i].Name == playerOrder[0].Name) // player0 bet?
+                            {
+                                playerOrder[0].ChangeMoney(-total);
+                            }
+                            else // must be player1
+                            {
+                                playerOrder[1].ChangeMoney(-total);
+                            }
+                            break;
+                        case "call":
+                            // skip if this is a call after a bet/raise by the same player
+                            if(i-2 >= 0)
+                            {
+                                if(actions[i - 2].ActionName == "bet" || 
+                                   actions[i - 2].ActionName == "raise")
+                                {
+                                    break;
+                                }
+                            }
+                            pot += lastBet; // match the last bet
+                            // deduct from player
+                            if (actions[i].Name == playerOrder[0].Name) // player0 bet?
+                            {
+                                playerOrder[0].ChangeMoney(-lastBet);
+                            }
+                            else // must be player1
+                            {
+                                playerOrder[1].ChangeMoney(-lastBet);
+                            }
+                            break;
+                    }
+                }
+            }
+
+            ResultWriter("After Bet2, pot is " + pot);
+            ResultWriter(" ");
             // round resolution
             // see if there is a clear winner based on hand strength
             Card highCard = null;
@@ -789,7 +910,8 @@ namespace PokerTournament
                 return false;
             }
             else if((previous.ActionName != "bet" && 
-                    previous.ActionName != "raise") &&
+                    previous.ActionName != "raise" &&
+                    previous.ActionName != "call") &&
                     (action.ActionName == "raise" || 
                      action.ActionName == "call"))
             {
@@ -829,15 +951,19 @@ namespace PokerTournament
             }
 
             // check for end conditions
-            if(pa0.ActionName == "fold" || pa1.ActionName == "fold")
+            if(pa1 != null && pa1.ActionName == "fold")
             {
                 return true; // somebody folded
             }
-            else if(pa1.ActionName == "call" || pa0.ActionName == "call")
+            else if (pa0 != null && pa0.ActionName == "fold")
             {
-                return true; // somebody called
+                return true; // somebody folded
             }
-            else if(pa1.ActionName == "check" && pa0.ActionName == "check")
+            else if(pa1 != null && pa0 != null && pa1.ActionName == "check" && pa0.ActionName == "check")
+            {
+                return true; // both checked
+            }
+            else if (pa1 != null && pa0 != null && pa1.ActionName == "call" && pa0.ActionName == "call")
             {
                 return true; // both checked
             }
