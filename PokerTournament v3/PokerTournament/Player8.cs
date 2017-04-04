@@ -33,17 +33,34 @@ namespace PokerTournament
 
                 //AI input for this round
 
-                //fold if hand is worse than pair
-                if (rank <= 1)
+                if(!this.Dealer) //logic for going first
                 {
-                    actionSelection = "5";
+                    Console.WriteLine("Going FIRST");
+                    if (rank <= 1) //free check
+                    {
+                        actionSelection = "4";
+                    }
+                    else
+                    {
+                        actionSelection = "4";
+                    }
+                }
+                else //logic for going second
+                {
+                    Console.WriteLine("Going SECOND");
+                    //fold if hand is worse than pair
+                    if (rank <= 1)
+                    {
+                        actionSelection = "5";
+                    }
+
+                    //otherwise check 
+                    else
+                    {
+                        actionSelection = "4";
+                    }
                 }
 
-                //otherwise check 
-                else
-                {
-                    actionSelection = "4";
-                }
 
                 // get amount if appropriate
                 int amount = 0;
@@ -255,7 +272,7 @@ namespace PokerTournament
                         }
                     }
 
-                    int v = handMap.FirstOrDefault(x => x.Value == 3).Key;
+                    int v = handMap.FirstOrDefault(x => x.Value == 2).Key;
 
                     for(int i = 0; i < hand.Length; i++)
                     {
