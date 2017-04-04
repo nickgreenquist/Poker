@@ -14,6 +14,8 @@ namespace PokerTournament
         {
         }
 
+        int numCardsTossedByOpponent = 0;
+
         // handle the first round of betting
         public override PlayerAction BettingRound1(List<PlayerAction> actions, Card[] hand)
         {
@@ -33,10 +35,9 @@ namespace PokerTournament
                 Console.WriteLine("Select an action:\n1 - bet\n2 - raise\n3 - call\n4 - check\n5 - fold");
 
                 //AI input for this round
-                if(actions.Count < 1) //logic for going first
+                if(actions.Count < 1) //you are going first in Bet1
                 {
                     Console.WriteLine("Going FIRST");
-
                     if (rank <= 1) //bad hand, just check
                     {
                         Console.WriteLine("check");
@@ -61,7 +62,7 @@ namespace PokerTournament
 
                         int v = handMap.FirstOrDefault(x => x.Value == 2).Key;
 
-                        if(v == 14)
+                        if (v == 14)
                         {
                             Console.WriteLine("check");
                             actionSelection = "4";
@@ -78,56 +79,362 @@ namespace PokerTournament
                         actionSelection = "1";
                     }
                 }
-                else //logic for non-starting turns
+                else
                 {
-                    //get players last action
                     PlayerAction lastAction = actions[actions.Count - 1];
-                    Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
-
-                    if(lastAction.ActionName.Equals("check"))
+                    Console.WriteLine(lastAction.ActionPhase);
+                    if (lastAction.ActionPhase.Equals("Bet1")) //responding to opponent in Bet1
                     {
-                        if(rank <= 1) //bad hand, let's check as well
+                        Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
+
+                        if (lastAction.ActionName.Equals("check"))
                         {
-                            Console.WriteLine("check");
+                            if (rank <= 1) //bad hand, let's check as well
+                            {
+                                Console.WriteLine("check");
+                                actionSelection = "4";
+                            }
+                            else //always raise in
+                            {
+                                Console.WriteLine("bet");
+                                actionSelection = "1";
+                            }
+                        }
+                        else if (lastAction.ActionName.Equals("bet"))
+                        {
+                            if (rank <= 1) //bad hand, fold
+                            {
+                                Console.WriteLine("fold");
+                                actionSelection = "5";
+                            }
+                            else //always raise, never call
+                            {
+                                Console.WriteLine("raise");
+                                actionSelection = "2";
+                            }
+                        }
+                        else if (lastAction.ActionName.Equals("raise"))
+                        {
+                            //if they raised us, we must have already bet so ignore bad hands
+                            Console.WriteLine("call");
+                            actionSelection = "3";
+                        }
+                        else if (lastAction.ActionName.Equals("call"))
+                        {
+                            //if they raised us, we must have already bet so ignore bad hands
+                            Console.WriteLine("call");
+                            actionSelection = "3";
+                        }
+
+                        //otherwise check - should never get here
+                        else
+                        {
+                            Console.WriteLine("SOMETHING WRONG");
                             actionSelection = "4";
                         }
-                        else //always raise in
-                        {
-                            Console.WriteLine("bet");
-                            actionSelection = "1";
-                        }
                     }
-                    else if (lastAction.ActionName.Equals("bet"))
+                    else if (lastAction.ActionPhase.Equals("Bet2")) //responding to opponent in Bet2
                     {
-                        if (rank <= 1) //bad hand, fold
-                        {
-                            Console.WriteLine("fold");
-                            actionSelection = "5";
-                        }
-                        else //always raise, never call
-                        {
-                            Console.WriteLine("raise");
-                            actionSelection = "2";
-                        }
-                    }
-                    else if (lastAction.ActionName.Equals("raise"))
-                    {
-                        //if they raised us, we must have already bet so ignore bad hands
-                        Console.WriteLine("call");
-                        actionSelection = "3";
-                    }
-                    else if (lastAction.ActionName.Equals("call"))
-                    {
-                        //if they raised us, we must have already bet so ignore bad hands
-                        Console.WriteLine("call");
-                        actionSelection = "3";
-                    }
+                        Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
 
-                    //otherwise check - should never get here
-                    else
+                        //update the cards our opponent threw away if applicable...get two turns ago to check if it was a draw phase
+                        PlayerAction drawAction = actions[actions.Count - 2];
+                        if(drawAction.ActionPhase.ToLower().Equals("draw"))
+                        {
+                            Console.WriteLine("OPPONENT DREW CARDS TWO TURNS AGO");
+                            Console.WriteLine("CARDS TOSSED: " + drawAction.Amount);
+                            if(drawAction.ActionName.Equals("stand pat"))
+                            {
+                                numCardsTossedByOpponent = 0;
+                            }
+                            else
+                            {
+                                numCardsTossedByOpponent = drawAction.Amount;
+                            }
+                        }
+
+                        if (lastAction.ActionName.Equals("check"))
+                        {
+                            if (rank <= 1) //bad hand, let's check as well
+                            {
+                                Console.WriteLine("check");
+                                actionSelection = "4";
+                            }
+                            else
+                            {
+                                if(numCardsTossedByOpponent == 0)
+                                {
+                                    actionSelection = "4";
+                                }
+                                else if(numCardsTossedByOpponent == 1) //they have two pair
+                                {
+                                    if(rank > 3)
+                                    {
+                                        actionSelection = "1";
+                                    }
+                                    else
+                                    {
+                                        actionSelection = "4";
+                                    }
+                                }
+                                else if(numCardsTossedByOpponent == 2) //they have triple
+                                {
+                                    if(rank >= 4)
+                                    {
+                                        actionSelection = "1";
+                                    }
+                                    else
+                                    {
+                                        actionSelection = "4";
+                                    }
+                                }
+                                else if(numCardsTossedByOpponent == 3) //they have a pair
+                                {
+                                    if(rank >= 2)
+                                    {
+                                        actionSelection = "1";
+                                    }
+                                    else
+                                    {
+                                        actionSelection = "4";
+                                    }
+                                }
+                                else //they threw away 4 cards
+                                {
+                                    actionSelection = "1";
+                                }
+                            }
+                        }
+                        else if (lastAction.ActionName.Equals("bet"))
+                        {
+                            if (rank <= 1) //bad hand, fold
+                            {
+                                actionSelection = "5";
+                            }
+                            if(numCardsTossedByOpponent == 0) //they stood pat
+                            {
+                                if(rank == 5 || rank == 6) //straight or flush we call
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if(rank >= 7) //full house or better we raise
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "5";
+                                }
+                            }
+                            else if(numCardsTossedByOpponent == 1) //two pair
+                            {
+                                if(rank == 3)
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if (rank >= 4)
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "5";
+                                }
+                            }
+                            else if(numCardsTossedByOpponent == 2) //triple
+                            {
+                                if(rank == 4)
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if(rank >= 5)
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "5";
+                                }
+                            }
+                            else if(numCardsTossedByOpponent == 3) //pair
+                            {
+                                if(rank == 2)
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if(rank >= 3)
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "5";
+                                }
+                            }
+                            else //they threw away 4 cards
+                            {
+                                if(rank == 2)
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if(rank >= 3)
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "3";
+                                }
+                            }
+                        }
+                        else if (lastAction.ActionName.Equals("raise"))
+                        {
+                            if (rank <= 1) //bad hand, fold
+                            {
+                                actionSelection = "5";
+                            }
+                            if (numCardsTossedByOpponent == 0) //they stood pat
+                            {
+                                if (rank == 5 || rank == 6) //straight or flush we call
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if (rank >= 7) //full house or better we raise
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "5";
+                                }
+                            }
+                            else if (numCardsTossedByOpponent == 1) //two pair
+                            {
+                                if (rank == 3)
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if (rank >= 4)
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "5";
+                                }
+                            }
+                            else if (numCardsTossedByOpponent == 2) //triple
+                            {
+                                if (rank == 4)
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if (rank >= 5)
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "5";
+                                }
+                            }
+                            else if (numCardsTossedByOpponent == 3) //pair
+                            {
+                                if (rank == 2 || rank == 3)
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if (rank >= 4)
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "5";
+                                }
+                            }
+                            else //they threw away 4 cards
+                            {
+                                if (rank == 2)
+                                {
+                                    actionSelection = "3";
+                                }
+                                else if (rank >= 3)
+                                {
+                                    actionSelection = "2";
+                                }
+                                else
+                                {
+                                    actionSelection = "3";
+                                }
+                            }
+                        }
+                        else if (lastAction.ActionName.Equals("call"))
+                        {
+                            //if they called us, we must have already bet so ignore bad hands
+                            actionSelection = "3";
+                        }
+
+                        //otherwise check - should never get here
+                        else
+                        {
+                            Console.WriteLine("SOMETHING WRONG");
+                            actionSelection = "4";
+                        }
+                    }
+                    else if (lastAction.ActionPhase.ToLower().Equals("draw")) //you are going first in Bet2
                     {
-                        Console.WriteLine("SOMETHING WRONG");
-                        actionSelection = "4";
+                        Console.WriteLine("Going FIRST");
+                        if(lastAction.ActionName.Equals("stand pat")) //nothing
+                        {
+                            //probably fold, however they may be bluffing
+                            actionSelection = "4";
+                        }
+                        else //get # of cards they threw away
+                        {
+                            int cardsTossed = lastAction.Amount;
+                            if(cardsTossed >= 4) //bad hand, bet
+                            {
+                                actionSelection = "1";
+                            }
+                            if(cardsTossed == 3) //they have a pair
+                            {
+                                if(rank > 2) //pair or better
+                                {
+                                    actionSelection = "1";
+                                }
+                                else
+                                {
+                                    actionSelection = "4";
+                                }
+                            }
+                            if(cardsTossed == 2) //they have a triple
+                            {
+                                if(rank > 4)
+                                {
+                                    actionSelection = "1";
+                                }
+                                else
+                                {
+                                    actionSelection = "4";
+                                }
+                            }
+                            if(cardsTossed == 1) //two pair
+                            {
+                                if(rank > 3)
+                                {
+                                    actionSelection = "1";
+                                }
+                                else
+                                {
+                                    actionSelection = "4";
+                                }
+                            }
+                        }
+                        if (rank <= 1) //bad hand, just check
+                        {
+                            actionSelection = "4";
+                        }
                     }
                 }
 
