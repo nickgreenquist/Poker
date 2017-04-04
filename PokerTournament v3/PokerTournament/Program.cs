@@ -12,6 +12,9 @@ namespace PokerTournament
      * classes (with N being the team number) for each team whose methods 
      * will be called for decisions.
      * Kevin Bierre  Spring 2017
+     * Version 3    4/4/2017:
+     *  Corrected a logic error when folding
+     *  Corrected a logic error in processing a call correctly
      */
     class Program
     {
@@ -20,10 +23,10 @@ namespace PokerTournament
             // create two players
             Human h0 = new Human(0, "Joe", 1000);
             //Human h1 = new Human(1, "Sue", 1000);
-            Player8 h1 = new Player8(1, "Rex", 1000);
+            Player8 rex = new Player8(1, "Rex", 1000);
 
             // create the Game
-            Game myGame = new Game(h0, h1);
+            Game myGame = new Game(h0, rex);
 
             myGame.Tournament(); // run the game
         }

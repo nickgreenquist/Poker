@@ -244,11 +244,10 @@ namespace PokerTournament
                             }
                             break;
                         case "call":
-                            // skip if this is a call after a bet/raise by the same player
-                            if (i - 2 >= 0)
+                            // skip if this is a call after another call
+                            if (i - 1 >= 0)
                             {
-                                if (actions[i - 2].ActionName == "bet" ||
-                                   actions[i - 2].ActionName == "raise")
+                                if (actions[i - 1].ActionName == "call")
                                 {
                                     break;
                                 }
@@ -272,7 +271,8 @@ namespace PokerTournament
             ResultWriter(" ");
 
             // see if someone folded
-            if (actions[actions.Count - 1].ActionName == "fold")
+            if (actions[actions.Count - 1].ActionName == "fold" &&
+                actions[actions.Count - 1].Name == playerOrder[1].Name)
             {
                 // if the player in playerOrder[1] folded, other
                 // player gets the pot
@@ -281,13 +281,13 @@ namespace PokerTournament
                 pot = 0; // clear the pot
                 return result; // skip rest of loop
             }
-
-            if (actions[actions.Count - 2].ActionName == "fold")
+            else if(actions[actions.Count - 1].ActionName == "fold" &&
+                actions[actions.Count - 1].Name == playerOrder[0].Name)
             {
-                // if the player in playerOrder[0] folded, other
+                // if the player in playerOrder[1] folded, other
                 // player gets the pot
                 playerOrder[1].ChangeMoney(pot);
-                string result = actions[actions.Count - 2].Name + " folded. Other player gets the pot of " + pot;
+                string result = actions[actions.Count - 1].Name + " folded. Other player gets the pot of " + pot;
                 pot = 0; // clear the pot
                 return result; // skip rest of loop
             }
@@ -378,11 +378,10 @@ namespace PokerTournament
                             }
                             break;
                         case "call":
-                            // skip if this is a call after a bet/raise by the same player
-                            if(i-2 >= 0)
+                            // skip if this is a call after another call
+                            if(i-1 >= 0)
                             {
-                                if(actions[i - 2].ActionName == "bet" || 
-                                   actions[i - 2].ActionName == "raise")
+                                if(actions[i - 1].ActionName == "call")
                                 {
                                     break;
                                 }
@@ -404,6 +403,29 @@ namespace PokerTournament
 
             ResultWriter("After Bet2, pot is " + pot);
             ResultWriter(" ");
+
+            // see if someone folded
+            if (actions[actions.Count - 1].ActionName == "fold" &&
+                actions[actions.Count - 1].Name == playerOrder[1].Name)
+            {
+                // if the player in playerOrder[1] folded, other
+                // player gets the pot
+                playerOrder[0].ChangeMoney(pot);
+                string result = actions[actions.Count - 1].Name + " folded. Other player gets the pot of " + pot;
+                pot = 0; // clear the pot
+                return result; // skip rest of loop
+            }
+            else if (actions[actions.Count - 1].ActionName == "fold" &&
+                actions[actions.Count - 1].Name == playerOrder[0].Name)
+            {
+                // if the player in playerOrder[1] folded, other
+                // player gets the pot
+                playerOrder[1].ChangeMoney(pot);
+                string result = actions[actions.Count - 1].Name + " folded. Other player gets the pot of " + pot;
+                pot = 0; // clear the pot
+                return result; // skip rest of loop
+            }
+
             // round resolution
             // see if there is a clear winner based on hand strength
             Card highCard = null;
@@ -928,6 +950,24 @@ namespace PokerTournament
         // done betting
         private bool EvaluateActions(List<PlayerAction> actions,string phase)
         {
+            // special case - the last player is the dealer and calls
+            // then we are done
+            PlayerAction lastAction = actions[actions.Count - 1];
+            if(lastAction.ActionPhase == phase && 
+                (phase == "Bet1" || phase == "Bet2") &&
+                lastAction.ActionName == "call")
+            {
+                // see if the player is the dealer
+                if(lastAction.Name == p0.Name && p0.Dealer == true)
+                {
+                    return true; // dealer called - betting ends
+                }
+                else if(lastAction.Name == p1.Name && p1.Dealer == true)
+                {
+                    return true; // dealer called - betting ends
+                }
+            }
+
             // look at the last two actions for the given phase
             int count = 0;
             PlayerAction pa0 = null;
