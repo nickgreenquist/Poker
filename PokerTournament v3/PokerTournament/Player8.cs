@@ -17,6 +17,7 @@ namespace PokerTournament
         // handle the first round of betting
         public override PlayerAction BettingRound1(List<PlayerAction> actions, Card[] hand)
         {
+
             // list the hand
             ListTheHand(hand);
 
@@ -32,31 +33,100 @@ namespace PokerTournament
                 Console.WriteLine("Select an action:\n1 - bet\n2 - raise\n3 - call\n4 - check\n5 - fold");
 
                 //AI input for this round
-
-                if(!this.Dealer) //logic for going first
+                if(actions.Count < 1) //logic for going first
                 {
                     Console.WriteLine("Going FIRST");
-                    if (rank <= 1) //free check
+
+                    if (rank <= 1) //bad hand, just check
                     {
+                        Console.WriteLine("check");
                         actionSelection = "4";
-                    }
-                    else
-                    {
-                        actionSelection = "4";
-                    }
-                }
-                else //logic for going second
-                {
-                    Console.WriteLine("Going SECOND");
-                    //fold if hand is worse than pair
-                    if (rank <= 1)
-                    {
-                        actionSelection = "5";
                     }
 
-                    //otherwise check 
+                    //if pair and its AA, limp in - check, this baits them into raising even if they have standard pair
+                    else if (rank == 2)
+                    {
+                        Dictionary<int, int> handMap = new Dictionary<int, int>();
+                        for (int i = 0; i < hand.Length; i++)
+                        {
+                            if (handMap.ContainsKey(hand[i].Value))
+                            {
+                                handMap[hand[i].Value]++;
+                            }
+                            else
+                            {
+                                handMap.Add(hand[i].Value, 1);
+                            }
+                        }
+
+                        int v = handMap.FirstOrDefault(x => x.Value == 2).Key;
+
+                        if(v == 14)
+                        {
+                            Console.WriteLine("check");
+                            actionSelection = "4";
+                        }
+                        else
+                        {
+                            Console.WriteLine("bet");
+                            actionSelection = "1";
+                        }
+                    }
                     else
                     {
+                        Console.WriteLine("bet");
+                        actionSelection = "1";
+                    }
+                }
+                else //logic for non-starting turns
+                {
+                    //get players last action
+                    PlayerAction lastAction = actions[actions.Count - 1];
+                    Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
+
+                    if(lastAction.ActionName.Equals("check"))
+                    {
+                        if(rank <= 1) //bad hand, let's check as well
+                        {
+                            Console.WriteLine("check");
+                            actionSelection = "4";
+                        }
+                        else //always raise in
+                        {
+                            Console.WriteLine("bet");
+                            actionSelection = "1";
+                        }
+                    }
+                    else if (lastAction.ActionName.Equals("bet"))
+                    {
+                        if (rank <= 1) //bad hand, fold
+                        {
+                            Console.WriteLine("fold");
+                            actionSelection = "5";
+                        }
+                        else //always raise, never call
+                        {
+                            Console.WriteLine("raise");
+                            actionSelection = "2";
+                        }
+                    }
+                    else if (lastAction.ActionName.Equals("raise"))
+                    {
+                        //if they raised us, we must have already bet so ignore bad hands
+                        Console.WriteLine("call");
+                        actionSelection = "3";
+                    }
+                    else if (lastAction.ActionName.Equals("call"))
+                    {
+                        //if they raised us, we must have already bet so ignore bad hands
+                        Console.WriteLine("call");
+                        actionSelection = "3";
+                    }
+
+                    //otherwise check - should never get here
+                    else
+                    {
+                        Console.WriteLine("SOMETHING WRONG");
                         actionSelection = "4";
                     }
                 }
@@ -72,12 +142,14 @@ namespace PokerTournament
                         if (actionSelection[0] == '1') // bet
                         {
                             Console.Write("Amount to bet? ");
-                            amtText = Console.ReadLine();
+                            //amtText = Console.ReadLine();
+                            amtText = "10";
                         }
                         else if (actionSelection[0] == '2') // raise
                         {
                             Console.Write("Amount to raise? ");
-                            amtText = Console.ReadLine();
+                            //amtText = Console.ReadLine();
+                            amtText = "10";
                         }
                         // convert the string to an int
                         int tempAmt = 0;
@@ -284,9 +356,19 @@ namespace PokerTournament
 
                     deleteStr = "3";
                 }
-                
 
-                int.TryParse(deleteStr, out cardsToDelete);
+                //nothing - throw out 4 lowest
+                if (rank <= 1)
+                {
+                    deleteStr = "4";
+                    for (int i = 0; i < 4; i++)
+                    {
+                        deleteIndexes.Add(i);
+                    }
+                }
+
+
+                    int.TryParse(deleteStr, out cardsToDelete);
             } while (cardsToDelete < 0 || cardsToDelete > 5);
 
             // which cards to delete if any
