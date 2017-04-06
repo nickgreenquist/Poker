@@ -15,10 +15,25 @@ namespace PokerTournament
         }
 
         int numCardsTossedByOpponent = 0;
+        int timesRaisedBet1 = 0;
+        int timesRaisedBet2 = 0;
+
+        //BLUFFING
+        int bluffCounter = 0;
+        bool alreadyIncrementedBluffCounter = false;
+        bool bluffing = false;
+        int timeToBluff = 10;
+        bool turnOfBluffing = false; //this becomes true if we find an AI that doesn't fall for 'stand pat' bluff
 
         // handle the first round of betting
         public override PlayerAction BettingRound1(List<PlayerAction> actions, Card[] hand)
         {
+            //increment bluff counter at start of bet1 if we haven't already
+            if(!alreadyIncrementedBluffCounter)
+            {
+                bluffCounter++;
+                alreadyIncrementedBluffCounter = true;
+            }
 
             // list the hand
             ListTheHand(hand);
@@ -35,7 +50,7 @@ namespace PokerTournament
                 Console.WriteLine("Select an action:\n1 - bet\n2 - raise\n3 - call\n4 - check\n5 - fold");
 
                 //AI input for this round
-                if(actions.Count < 1) //you are going first in Bet1
+                if(actions.Count < 1) //BET1, going first
                 {
                     Console.WriteLine("Going FIRST");
                     if (rank <= 1) //bad hand, just check
@@ -82,8 +97,10 @@ namespace PokerTournament
                 else
                 {
                     PlayerAction lastAction = actions[actions.Count - 1];
-                    Console.WriteLine(lastAction.ActionPhase);
-                    if (lastAction.ActionPhase.Equals("Bet1")) //responding to opponent in Bet1
+                    Console.WriteLine("PHASE: " + lastAction.ActionPhase);
+
+
+                    if (lastAction.ActionPhase.Equals("Bet1")) //BET1 responding
                     {
                         Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
 
@@ -109,8 +126,17 @@ namespace PokerTournament
                             }
                             else //always raise, never call
                             {
-                                Console.WriteLine("raise");
-                                actionSelection = "2";
+                                if(timesRaisedBet1 < 1)
+                                {
+                                    Console.WriteLine("raise");
+                                    actionSelection = "2";
+                                    timesRaisedBet1++;
+                                }
+                                else
+                                {
+                                    Console.WriteLine("already raised, calling");
+                                    actionSelection = "3";
+                                }
                             }
                         }
                         else if (lastAction.ActionName.Equals("raise"))
@@ -119,31 +145,29 @@ namespace PokerTournament
                             Console.WriteLine("call");
                             actionSelection = "3";
                         }
-                        else if (lastAction.ActionName.Equals("call"))
+                        else if (lastAction.ActionName.Equals("call")) //should never get here
                         {
                             //if they raised us, we must have already bet so ignore bad hands
                             Console.WriteLine("call");
                             actionSelection = "3";
                         }
-
-                        //otherwise check - should never get here
-                        else
+                        else //otherwise check - should never get here
                         {
                             Console.WriteLine("SOMETHING WRONG");
                             actionSelection = "4";
                         }
                     }
-                    else if (lastAction.ActionPhase.Equals("Bet2")) //responding to opponent in Bet2
+                    else if (lastAction.ActionPhase.Equals("Bet2")) //BET2, responding
                     {
                         Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
 
-                        //update the cards our opponent threw away if applicable...get two turns ago to check if it was a draw phase
-                        PlayerAction drawAction = actions[actions.Count - 2];
+                        //update the cards our opponent threw away if applicable...get three turns ago to check if it was a draw phase
+                        PlayerAction drawAction = actions[actions.Count - 3];
                         if(drawAction.ActionPhase.ToLower().Equals("draw"))
                         {
-                            Console.WriteLine("OPPONENT DREW CARDS TWO TURNS AGO");
+                            Console.WriteLine("OPPONENT DREW CARDS THREE TURNS AGO");
                             Console.WriteLine("CARDS TOSSED: " + drawAction.Amount);
-                            if(drawAction.ActionName.Equals("stand pat"))
+                            if (drawAction.ActionName.Equals("stand pat"))
                             {
                                 numCardsTossedByOpponent = 0;
                             }
@@ -155,7 +179,11 @@ namespace PokerTournament
 
                         if (lastAction.ActionName.Equals("check"))
                         {
-                            if (rank <= 1) //bad hand, let's check as well
+                            if(bluffing)
+                            {
+                                actionSelection = "1";
+                            }
+                            else if (rank <= 1) //bad hand, let's check as well
                             {
                                 Console.WriteLine("check");
                                 actionSelection = "4";
@@ -207,7 +235,12 @@ namespace PokerTournament
                         }
                         else if (lastAction.ActionName.Equals("bet"))
                         {
-                            if (rank <= 1) //bad hand, fold
+                            if(bluffing) //if they bet us after we discarded
+                            {
+                                actionSelection = "5";
+                                turnOfBluffing = true;
+                            }
+                            else if (rank <= 1) //bad hand, fold
                             {
                                 actionSelection = "5";
                             }
@@ -219,7 +252,15 @@ namespace PokerTournament
                                 }
                                 else if(rank >= 7) //full house or better we raise
                                 {
-                                    actionSelection = "2";
+                                    if(timesRaisedBet2 < 2)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than twice
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -234,7 +275,15 @@ namespace PokerTournament
                                 }
                                 else if (rank >= 4)
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 1)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -249,7 +298,15 @@ namespace PokerTournament
                                 }
                                 else if(rank >= 5)
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 1)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -264,7 +321,15 @@ namespace PokerTournament
                                 }
                                 else if(rank >= 3)
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 1)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -279,7 +344,15 @@ namespace PokerTournament
                                 }
                                 else if(rank >= 3)
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 1)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -289,11 +362,16 @@ namespace PokerTournament
                         }
                         else if (lastAction.ActionName.Equals("raise"))
                         {
-                            if (rank <= 1) //bad hand, fold
+                            if(bluffing) //they raised our bet when doing a stand pat bluff, turn off bluffing
+                            {
+                                actionSelection = "5";
+                                turnOfBluffing = true;
+                            }
+                            else if (rank <= 1) //bad hand, fold
                             {
                                 actionSelection = "5";
                             }
-                            if (numCardsTossedByOpponent == 0) //they stood pat
+                            else if (numCardsTossedByOpponent == 0) //they stood pat
                             {
                                 if (rank == 5 || rank == 6) //straight or flush we call
                                 {
@@ -301,7 +379,15 @@ namespace PokerTournament
                                 }
                                 else if (rank >= 7) //full house or better we raise
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 2)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -316,7 +402,15 @@ namespace PokerTournament
                                 }
                                 else if (rank >= 4)
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 1)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -331,7 +425,15 @@ namespace PokerTournament
                                 }
                                 else if (rank >= 5)
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 1)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -346,7 +448,15 @@ namespace PokerTournament
                                 }
                                 else if (rank >= 4)
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 1)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -361,7 +471,15 @@ namespace PokerTournament
                                 }
                                 else if (rank >= 3)
                                 {
-                                    actionSelection = "2";
+                                    if (timesRaisedBet2 < 1)
+                                    {
+                                        actionSelection = "2";
+                                        timesRaisedBet2++;
+                                    }
+                                    else //don't raise more than once
+                                    {
+                                        actionSelection = "3";
+                                    }
                                 }
                                 else
                                 {
@@ -385,7 +503,19 @@ namespace PokerTournament
                     else if (lastAction.ActionPhase.ToLower().Equals("draw")) //you are going first in Bet2
                     {
                         Console.WriteLine("Going FIRST");
-                        if(lastAction.ActionName.Equals("stand pat")) //nothing
+                        Console.WriteLine("OPPONENT DREW CARDS THREE TURNS AGO");
+                        Console.WriteLine("CARDS TOSSED: " + lastAction.Amount);
+
+                        //bluff
+                        if (bluffing)
+                        {
+                            actionSelection = "1";
+                        }
+                        else if (rank <= 1) //bad hand, just check
+                        {
+                            actionSelection = "4";
+                        }
+                        else if (lastAction.ActionName.Equals("stand pat")) //nothing
                         {
                             //probably fold, however they may be bluffing
                             actionSelection = "4";
@@ -393,13 +523,13 @@ namespace PokerTournament
                         else //get # of cards they threw away
                         {
                             int cardsTossed = lastAction.Amount;
-                            if(cardsTossed >= 4) //bad hand, bet
+                            if (cardsTossed >= 4) //bad hand, bet
                             {
                                 actionSelection = "1";
                             }
-                            if(cardsTossed == 3) //they have a pair
+                            if (cardsTossed == 3) //they have a pair
                             {
-                                if(rank > 2) //pair or better
+                                if (rank > 2) //pair or better
                                 {
                                     actionSelection = "1";
                                 }
@@ -408,9 +538,9 @@ namespace PokerTournament
                                     actionSelection = "4";
                                 }
                             }
-                            if(cardsTossed == 2) //they have a triple
+                            if (cardsTossed == 2) //they have a triple
                             {
-                                if(rank > 4)
+                                if (rank > 4)
                                 {
                                     actionSelection = "1";
                                 }
@@ -419,9 +549,9 @@ namespace PokerTournament
                                     actionSelection = "4";
                                 }
                             }
-                            if(cardsTossed == 1) //two pair
+                            if (cardsTossed == 1) //two pair
                             {
-                                if(rank > 3)
+                                if (rank > 3)
                                 {
                                     actionSelection = "1";
                                 }
@@ -430,10 +560,6 @@ namespace PokerTournament
                                     actionSelection = "4";
                                 }
                             }
-                        }
-                        if (rank <= 1) //bad hand, just check
-                        {
-                            actionSelection = "4";
                         }
                     }
                 }
@@ -500,6 +626,7 @@ namespace PokerTournament
         // reuse the same logic for second betting round
         public override PlayerAction BettingRound2(List<PlayerAction> actions, Card[] hand)
         {
+
             PlayerAction pa1 = BettingRound1(actions, hand);
 
             // create a new PlayerAction object
@@ -508,6 +635,19 @@ namespace PokerTournament
 
         public override PlayerAction Draw(Card[] hand)
         {
+            //reset the timesRaised variable after Bet1 is done
+            timesRaisedBet1 = 0;
+            timesRaisedBet2 = 0;
+
+            //increment bluffCounter in draw because we only draw once every round (unlike betting that has
+            //multiple phases
+            alreadyIncrementedBluffCounter = false;
+            if(bluffing)
+            {
+                //Console.ReadLine();
+            }
+            bluffing = false;
+
             // list the hand
             ListTheHand(hand);
 
@@ -667,15 +807,27 @@ namespace PokerTournament
                 //nothing - throw out 4 lowest
                 if (rank <= 1)
                 {
-                    deleteStr = "4";
-                    for (int i = 0; i < 4; i++)
+                    if (bluffCounter > timeToBluff && turnOfBluffing == false)
                     {
-                        deleteIndexes.Add(i);
+                        deleteStr = "0";
+                        bluffing = true;
+                        bluffCounter = 0;
+                        Console.WriteLine("bluffing");
+                        Console.ReadLine();
+                    }
+                    else
+                    {
+                        deleteStr = "4";
+                        for (int i = 0; i < 4; i++)
+                        {
+                            deleteIndexes.Add(i);
+                        }
                     }
                 }
 
 
                     int.TryParse(deleteStr, out cardsToDelete);
+
             } while (cardsToDelete < 0 || cardsToDelete > 5);
 
             // which cards to delete if any

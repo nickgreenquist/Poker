@@ -22,6 +22,7 @@ namespace PokerTournament
 
         // pot of money - used by Tournament and Round methods
         int pot = 0;  // pot of money (holds bets and ante)
+        int anteAmt = 0;
 
         // constructor
         public Game(Player a, Player b)
@@ -71,7 +72,7 @@ namespace PokerTournament
                 }
 
                 // ante up
-                pot += ante * 2; // add to the pot
+                anteAmt = ante * 2; // add to the pot in Round
                 p0.ChangeMoney(-ante);
                 p1.ChangeMoney(-ante);
 
@@ -154,8 +155,22 @@ namespace PokerTournament
             string text = ""; // result text
             List<PlayerAction> actions = new List<PlayerAction>(); // list of actions
 
+            // reset the pot
+            if(pot % 2 == 0) // even numbered pot
+            {
+                pot = anteAmt; // pot with antes only
+            }
+            else // odd pot
+            {
+                // in this case, the pot was not an even number
+                // so there was 1 credit left over for the starting pot
+                // In theory this should never happen.
+                pot = anteAmt + 1; 
+            }
             // call players in order
             Player[] playerOrder = new Player[2];
+
+            // note that playerOrder[1] always contains the dealer
             if(p0.Dealer == true) // player 0 deals?
             {
                 playerOrder[0] = p1; // p1 goes first
@@ -190,6 +205,18 @@ namespace PokerTournament
                 actions.Add(pa0);
                 ResultWriter(pa0.ToString());
                 ResultWriter(" ");
+
+                // handle the case of the first player calling - the
+                // second player must also call - do this automatically
+                // and break out of the loop
+                if(pa0.ActionName == "call")
+                {
+                    // add the second player's action automatically
+                    PlayerAction pa1 = new PlayerAction(playerOrder[1].Name, "Bet1", "call", 0);
+                    actions.Add(pa1);
+                    break; // done betting
+                }
+
                 if (pa0.ActionName != "fold") // first player did not fold
                 {
                     PlayerAction pa1 = playerOrder[1].BettingRound1(actions, playerOrder[1].Hand);
@@ -324,6 +351,18 @@ namespace PokerTournament
                 actions.Add(pa0);
                 ResultWriter(pa0.ToString());
                 ResultWriter(" ");
+
+                // handle the case of the first player calling - the
+                // second player must also call - do this automatically
+                // and break out of the loop
+                if (pa0.ActionName == "call")
+                {
+                    // add the second player's action automatically
+                    PlayerAction pa1 = new PlayerAction(playerOrder[1].Name, "Bet2", "call", 0);
+                    actions.Add(pa1);
+                    break; // done betting
+                }
+
                 if (pa0.ActionName != "fold") // first player did not fold
                 {
                     PlayerAction pa1 = playerOrder[1].BettingRound2(actions, playerOrder[1].Hand);
