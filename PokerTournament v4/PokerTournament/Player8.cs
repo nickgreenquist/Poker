@@ -50,12 +50,24 @@ namespace PokerTournament
                 Console.WriteLine("Select an action:\n1 - bet\n2 - raise\n3 - call\n4 - check\n5 - fold");
 
                 //AI input for this round
+                /* Decision Tree
+                 * 
+                 *              BET1            |           DRAW      |                 BET2
+                 *             /    \                        |                      /           \
+                 *      FIRST?        SECOND                RANK                 FIRST?         SECOND?
+                 *      RANK          ACTION                         CHECK THEIR DISCARD        ACTION     
+                 *                    RANK                           CHECK RANK                 CHECK THEIR DISCARD
+                 *                                                                              CHECK RANK
+                 * 
+                 */
+
+
                 if(actions.Count < 1) //BET1, going first
                 {
-                    Console.WriteLine("Going FIRST");
+                    //Console.WriteLine("Going FIRST");
                     if (rank <= 1) //bad hand, just check
                     {
-                        Console.WriteLine("check");
+                        //Console.WriteLine("check");
                         actionSelection = "4";
                     }
 
@@ -79,41 +91,40 @@ namespace PokerTournament
 
                         if (v == 14)
                         {
-                            Console.WriteLine("check");
+                            //Console.WriteLine("check");
                             actionSelection = "4";
                         }
                         else
                         {
-                            Console.WriteLine("bet");
+                            //Console.WriteLine("bet");
                             actionSelection = "1";
                         }
                     }
                     else
                     {
-                        Console.WriteLine("bet");
+                        //Console.WriteLine("bet");
                         actionSelection = "1";
                     }
                 }
                 else
                 {
                     PlayerAction lastAction = actions[actions.Count - 1];
-                    Console.WriteLine("PHASE: " + lastAction.ActionPhase);
-
+                    //Console.WriteLine("PHASE: " + lastAction.ActionPhase);
 
                     if (lastAction.ActionPhase.Equals("Bet1")) //BET1 responding
                     {
-                        Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
+                        //Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
 
                         if (lastAction.ActionName.Equals("check"))
                         {
                             if (rank <= 1) //bad hand, let's check as well
                             {
-                                Console.WriteLine("check");
+                                //Console.WriteLine("check");
                                 actionSelection = "4";
                             }
                             else //always raise in
                             {
-                                Console.WriteLine("bet");
+                                //Console.WriteLine("bet");
                                 actionSelection = "1";
                             }
                         }
@@ -121,52 +132,52 @@ namespace PokerTournament
                         {
                             if (rank <= 1) //bad hand, fold
                             {
-                                Console.WriteLine("fold");
+                                //Console.WriteLine("fold");
                                 actionSelection = "5";
                             }
                             else //always raise, never call
                             {
                                 if(timesRaisedBet1 < 1)
                                 {
-                                    Console.WriteLine("raise");
+                                    //Console.WriteLine("raise");
                                     actionSelection = "2";
                                     timesRaisedBet1++;
                                 }
                                 else
                                 {
-                                    Console.WriteLine("already raised, calling");
+                                    //Console.WriteLine("already raised, calling");
                                     actionSelection = "3";
                                 }
                             }
                         }
                         else if (lastAction.ActionName.Equals("raise"))
                         {
-                            //if they raised us, we must have already bet so ignore bad hands
-                            Console.WriteLine("call");
+                            //if they raised us, we must have already bet so ignore rechecking hands
+                            //Console.WriteLine("call");
                             actionSelection = "3";
                         }
                         else if (lastAction.ActionName.Equals("call")) //should never get here
                         {
                             //if they raised us, we must have already bet so ignore bad hands
-                            Console.WriteLine("call");
+                            //Console.WriteLine("call");
                             actionSelection = "3";
                         }
                         else //otherwise check - should never get here
                         {
-                            Console.WriteLine("SOMETHING WRONG");
+                            //Console.WriteLine("SOMETHING WRONG");
                             actionSelection = "4";
                         }
                     }
                     else if (lastAction.ActionPhase.Equals("Bet2")) //BET2, responding
                     {
-                        Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
+                        //Console.WriteLine("OPPONENTS LAST ACTION: " + lastAction.ActionName);
 
                         //update the cards our opponent threw away if applicable...get three turns ago to check if it was a draw phase
                         PlayerAction drawAction = actions[actions.Count - 3];
                         if(drawAction.ActionPhase.ToLower().Equals("draw"))
                         {
-                            Console.WriteLine("OPPONENT DREW CARDS THREE TURNS AGO");
-                            Console.WriteLine("CARDS TOSSED: " + drawAction.Amount);
+                            //Console.WriteLine("OPPONENT DREW CARDS THREE TURNS AGO");
+                            //Console.WriteLine("CARDS TOSSED: " + drawAction.Amount);
                             if (drawAction.ActionName.Equals("stand pat"))
                             {
                                 numCardsTossedByOpponent = 0;
@@ -185,7 +196,7 @@ namespace PokerTournament
                             }
                             else if (rank <= 1) //bad hand, let's check as well
                             {
-                                Console.WriteLine("check");
+                                //Console.WriteLine("check");
                                 actionSelection = "4";
                             }
                             else
@@ -496,15 +507,15 @@ namespace PokerTournament
                         //otherwise check - should never get here
                         else
                         {
-                            Console.WriteLine("SOMETHING WRONG");
+                            //Console.WriteLine("SOMETHING WRONG");
                             actionSelection = "4";
                         }
                     }
                     else if (lastAction.ActionPhase.ToLower().Equals("draw")) //you are going first in Bet2
                     {
-                        Console.WriteLine("Going FIRST");
-                        Console.WriteLine("OPPONENT DREW CARDS THREE TURNS AGO");
-                        Console.WriteLine("CARDS TOSSED: " + lastAction.Amount);
+                        //Console.WriteLine("Going FIRST");
+                        //Console.WriteLine("OPPONENT DREW CARDS THREE TURNS AGO");
+                        //Console.WriteLine("CARDS TOSSED: " + lastAction.Amount);
 
                         //bluff
                         if (bluffing)
@@ -642,10 +653,6 @@ namespace PokerTournament
             //increment bluffCounter in draw because we only draw once every round (unlike betting that has
             //multiple phases
             alreadyIncrementedBluffCounter = false;
-            if(bluffing)
-            {
-                //Console.ReadLine();
-            }
             bluffing = false;
 
             // list the hand
@@ -812,8 +819,8 @@ namespace PokerTournament
                         deleteStr = "0";
                         bluffing = true;
                         bluffCounter = 0;
-                        Console.WriteLine("bluffing");
-                        Console.ReadLine();
+                        //Console.WriteLine("bluffing");
+                        //Console.ReadLine();
                     }
                     else
                     {
